@@ -1,0 +1,37 @@
+# Upstream Dockerfile.dev at v2.24.0, pinned for the StudioAnchor dispatch-fence-v1 build.
+# Runtime secrets stay in the Compose environment; nothing secret is baked in.
+FROM node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94
+ARG NEXT_PUBLIC_VERSION
+ARG SOURCE_BASE
+ARG PATCH_SHA256
+ENV NEXT_PUBLIC_VERSION=$NEXT_PUBLIC_VERSION
+LABEL org.opencontainers.image.source="https://github.com/gitroomhq/postiz-app" \
+      org.opencontainers.image.revision="$SOURCE_BASE" \
+      org.opencontainers.image.version="$NEXT_PUBLIC_VERSION" \
+      com.studioanchor.patch="dispatch-fence-v1" \
+      com.studioanchor.patch.sha256="$PATCH_SHA256" \
+      com.studioanchor.patch.source="https://github.com/Badmrpotatohead/studioanchor-marketing/pull/36"
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    g++ \
+    make \
+    python3-pip \
+    bash \
+    nginx \
+&& rm -rf /var/lib/apt/lists/*
+
+RUN addgroup --system www \
+ && adduser --system --ingroup www --home /www --shell /usr/sbin/nologin www \
+ && mkdir -p /www \
+ && chown -R www:www /www /var/lib/nginx
+
+RUN npm --no-update-notifier --no-fund --global install pnpm@10.6.1 pm2@7.0.4
+
+WORKDIR /app
+
+COPY . /app
+COPY var/docker/nginx.conf /etc/nginx/nginx.conf
+
+RUN pnpm install --frozen-lockfile
+RUN NODE_OPTIONS="--max-old-space-size=4096" pnpm run build
+
+CMD ["sh", "-c", "nginx && pnpm run pm2"]
