@@ -1,3 +1,5 @@
+import { DeliveryStopRepository } from './posts/delivery.stop.repository';
+import { DeliveryStopService } from './posts/delivery.stop.service';
 import { Global, Module } from '@nestjs/common';
 import { PrismaRepository, PrismaService, PrismaTransaction } from './prisma.service';
 import { OrganizationRepository } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.repository';
@@ -73,6 +75,8 @@ import { AdminStatsService } from '@gitroom/nestjs-libraries/database/prisma/adm
     IntegrationRepository,
     PostsService,
     PostsRepository,
+    DeliveryStopRepository,
+    DeliveryStopService,
     StripeService,
     PaymentService,
     PaymentProviderManager,

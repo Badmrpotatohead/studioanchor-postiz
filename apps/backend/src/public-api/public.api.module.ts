@@ -12,7 +12,9 @@ import { PublicIntegrationsController } from '@gitroom/backend/public-api/routes
 import { PublicAuthMiddleware } from '@gitroom/backend/services/auth/public.auth.middleware';
 import { SuperAdminGuard } from '@gitroom/backend/services/auth/super.admin.guard';
 
-const authenticatedController = [PublicIntegrationsController];
+import { PublicDeliveryController } from './routes/v1/public.delivery.controller';
+
+const authenticatedController = [PublicIntegrationsController, PublicDeliveryController];
 @Module({
   imports: [UploadModule],
   controllers: process.env.MCP_ONLY ? [] : [...authenticatedController],

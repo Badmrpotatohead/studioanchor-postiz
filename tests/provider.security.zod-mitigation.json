@@ -1,0 +1,12 @@
+{
+  "advisory": "https://github.com/advisories/GHSA-mrhx-c7xc-m3w5",
+  "upstreamFix": "https://github.com/colinhacks/zod/commit/a0ebf970f2d752e5f58527cd2942ff48be4f46bd",
+  "patch": "patches/zod@3.25.76.patch",
+  "patchSha256": "cff3a76eadd71368bbfeb00c2aff0a600115af4e1c15fd70b556e7438382feff",
+  "files": {
+    "v3/types.cjs": "25d63404fd9d0d315caa0a9f0d93a525a00e3ede2641fef0188b5f45318e7c68",
+    "v3/types.js": "909289bcec4948abbcf1395995915478149260e7f2aee393c33a776e1977f2ca",
+    "v4/core/schemas.cjs": "543534e8595f12dcb050861503e7455789959029550651ea55d00f36eec601c0",
+    "v4/core/schemas.js": "bd0d5aed4c382a2d2221f881e775e66a237d299f95e908c3e409636e3d6f3adc"
+  }
+}

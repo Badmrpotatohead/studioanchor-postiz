@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from 'react';
 export function usePageVisibility(page: number) {
-  if (typeof document === 'undefined') {
-    return true;
-  }
-  const [isVisible, setIsVisible] = useState(!document.hidden);
+  const [isVisible, setIsVisible] = useState(true);
   useEffect(() => {
     if (page > 1) {
       return;
     }
+    setIsVisible(!document.hidden);
     const handleVisibilityChange = () => {
       setIsVisible(!document.hidden);
     };
@@ -24,9 +22,9 @@ export function usePageVisibility(page: number) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      document.removeEventListener('blur', onBlur);
-      document.removeEventListener('focus', focus);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [page]);
   return isVisible;
 }

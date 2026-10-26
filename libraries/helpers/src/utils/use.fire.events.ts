@@ -23,6 +23,6 @@ export const useFireEvents = () => {
       posthog.capture(name, props);
       plausible(name, { props });
     },
-    [user]
+    [user, billingEnabled, posthog, plausible]
   );
 };

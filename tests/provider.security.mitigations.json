@@ -1,0 +1,12 @@
+{
+  "advisory": "https://github.com/advisories/GHSA-vfj7-8cjw-p6xm",
+  "patch": "patches/braces@3.0.3.patch",
+  "patchSha256": "7890118140580eb617ccc6d67549da1edbb7fe87799a3d52d723294bad8fb9cd",
+  "files": {
+    "lib/parse.js": "d721371478fa496c9a9365a1c395cf9a1529649eb2711ef9b9a74dd59b943dcd",
+    "lib/compile.js": "1ed64d847aba92334bf65223acd4258f6624293b6ae1ed5e91507e3d4e7b913b",
+    "lib/expand.js": "b88601e81e5a25c237204f11ae2ee22f2ea14a117622bc5e097324c55977b976",
+    "lib/stringify.js": "c6f10b7d5748dca76e77392f5f44155d420d32f43b166a92e18bb108d88ec98c",
+    "lib/validate-ast.js": "bfa861cc872250a9b963e75cf795aca725c1017251d3db621043a539bc027139"
+  }
+}

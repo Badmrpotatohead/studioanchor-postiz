@@ -1,3 +1,5 @@
+import { activityInfo } from '@temporalio/activity';
+import { DeliveryStopService } from '@gitroom/nestjs-libraries/database/prisma/posts/delivery.stop.service';
 import { Injectable } from '@nestjs/common';
 import {
   Activity,
@@ -97,6 +99,7 @@ function reanchorInterval(post: any) {
 export class PostActivity {
   constructor(
     private _postService: PostsService,
+    private _deliveryStopService: DeliveryStopService,
     private _notificationService: NotificationService,
     private _integrationManager: IntegrationManager,
     private _integrationService: IntegrationService,
@@ -105,6 +108,11 @@ export class PostActivity {
     private _temporalService: TemporalService,
     private _subscriptionService: SubscriptionService
   ) {}
+
+  @ActivityMethod()
+  async claimControlledDispatch(orgId: string, postId: string, scheduledAt: string) {
+    return this._deliveryStopService.claim(orgId, postId, scheduledAt, activityInfo().workflowExecution.runId);
+  }
 
   @ActivityMethod()
   async getIntegrationById(orgId: string, id: string) {
@@ -117,7 +125,7 @@ export class PostActivity {
     for (const post of list) {
       await this._temporalService.client
         .getRawClient()
-        .workflow.signalWithStart('postWorkflowV112', {
+        .workflow.signalWithStart(post.dispatchControl ? 'postWorkflowV113' : 'postWorkflowV112', {
           workflowId: `post_${post.id}`,
           taskQueue: 'main',
           signal: 'poke',

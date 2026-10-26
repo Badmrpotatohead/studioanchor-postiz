@@ -16,9 +16,7 @@ import { IntegrationService } from '@gitroom/nestjs-libraries/database/prisma/in
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { TemporalService } from 'nestjs-temporal-core';
 import { TypedSearchAttributes } from '@temporalio/common';
-import {
-  organizationId,
-} from '@gitroom/nestjs-libraries/temporal/temporal.search.attribute';
+import { organizationId } from '@gitroom/nestjs-libraries/temporal/temporal.search.attribute';
 const parser = new Parser();
 
 interface WorkflowChannelsState {
@@ -171,7 +169,7 @@ export class AutopostService {
         messages: {
           reducer: (currentState, updateValue) =>
             currentState.concat(updateValue),
-          default: () => [],
+          default: (): BaseMessage[] => [],
         },
         body: null,
         description: null,
@@ -267,43 +265,47 @@ export class AutopostService {
       state.integrations[0].organizationId
     );
 
-    await this._postsService.createPost(state.integrations[0].organizationId, {
-      date: nextTime + 'Z',
-      order: makeId(10),
-      shortLink: false,
-      type: 'draft',
-      tags: [],
-      posts: state.integrations.map((i) => ({
-        settings: {
-          __type: i.providerIdentifier as any,
-          title: '',
-          tags: [],
-          subreddit: [],
-        },
-        group: makeId(10),
-        integration: { id: i.id },
-        value: [
-          {
-            id: makeId(10),
-            delay: 0,
-            content:
-              state.description.replace(/\n/g, '\n\n') +
-              '\n\n' +
-              state.load.url,
-            image: !state.image
-              ? []
-              : [
-                  {
-                    id: makeId(10),
-                    name: makeId(10),
-                    path: state.image,
-                    organizationId: state.integrations[0].organizationId,
-                  },
-                ],
+    await this._postsService.createPost(
+      state.integrations[0].organizationId,
+      {
+        date: nextTime + 'Z',
+        order: makeId(10),
+        shortLink: false,
+        type: 'draft',
+        tags: [],
+        posts: state.integrations.map((i) => ({
+          settings: {
+            __type: i.providerIdentifier as any,
+            title: '',
+            tags: [],
+            subreddit: [],
           },
-        ],
-      })),
-    }, 'AUTOPOST');
+          group: makeId(10),
+          integration: { id: i.id },
+          value: [
+            {
+              id: makeId(10),
+              delay: 0,
+              content:
+                state.description.replace(/\n/g, '\n\n') +
+                '\n\n' +
+                state.load.url,
+              image: !state.image
+                ? []
+                : [
+                    {
+                      id: makeId(10),
+                      name: makeId(10),
+                      path: state.image,
+                      organizationId: state.integrations[0].organizationId,
+                    },
+                  ],
+            },
+          ],
+        })),
+      },
+      'AUTOPOST'
+    );
   }
 
   async updateUrl(state: WorkflowChannelsState) {

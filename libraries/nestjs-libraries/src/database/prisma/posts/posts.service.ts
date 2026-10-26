@@ -736,6 +736,8 @@ export class PostsService {
       }
     } catch (err) {}
 
+    const controlledPost = await this._postRepository.getPostById(postId, orgId);
+    if (!controlledPost || controlledPost.dispatchControl === 'STOPPED' || controlledPost.deletedAt) return;
     if (state === 'DRAFT') {
       return;
     }
@@ -743,7 +745,7 @@ export class PostsService {
     try {
       await this._temporalService.client
         .getRawClient()
-        ?.workflow.start('postWorkflowV112', {
+        ?.workflow.start(controlledPost.dispatchControl ? 'postWorkflowV113' : 'postWorkflowV112', {
           workflowId: `post_${postId}`,
           taskQueue: 'main',
           workflowIdConflictPolicy: 'TERMINATE_EXISTING',
@@ -914,7 +916,8 @@ export class PostsService {
     orgId: string,
     body: CreatePostDto,
     creationMethod: CreationMethod,
-    keepGroup = false
+    keepGroup = false,
+    controlled = false
   ): Promise<any[]> {
     const postList = [];
     for (const post of body.posts) {
@@ -956,7 +959,8 @@ export class PostsService {
         body.tags,
         creationMethod,
         body.inter,
-        keepGroup
+        keepGroup,
+        controlled
       );
 
       if (!posts?.length) {
@@ -1148,7 +1152,7 @@ export class PostsService {
     }
 
     const state: State = status === 'draft' ? 'DRAFT' : 'QUEUE';
-    await this._postRepository.changeState(id, state);
+    await this._postRepository.changeRequestedState(orgId, id, state);
 
     try {
       await this.startWorkflow(

@@ -15,8 +15,7 @@ import crypto from 'crypto';
 import path from 'path';
 import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { fileTypeFromBuffer } = require('file-type');
+import { fileTypeFromBuffer } from 'file-type';
 
 const ALLOWED_EXT_TO_MIME: Record<string, string> = {
   '.jpg': 'image/jpeg',
@@ -95,7 +94,10 @@ export async function simpleUpload(
   _contentType: string
 ) {
   const detected = await fileTypeFromBuffer(data);
-  if (!detected || !Object.values(ALLOWED_EXT_TO_MIME).includes(detected.mime)) {
+  if (
+    !detected ||
+    !Object.values(ALLOWED_EXT_TO_MIME).includes(detected.mime)
+  ) {
     throw new Error('Unsupported file type.');
   }
   const fileExtension = `.${detected.ext}`;

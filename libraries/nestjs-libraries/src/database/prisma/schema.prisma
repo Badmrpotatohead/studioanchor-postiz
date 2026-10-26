@@ -468,6 +468,10 @@ model Post {
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
   deletedAt                  DateTime?
+  // Opt-in single-post dispatch fence. NULL preserves every legacy workflow.
+  dispatchControl            String?
+  dispatchClaim              String?
+  deliveryStopReceipt        String?
   comments                   Comments[]
   errors                     Errors[]
   payoutProblems             PayoutProblems[]

@@ -52,6 +52,7 @@ export class PostsRepository {
       },
       select: {
         id: true,
+        dispatchControl: true,
         organizationId: true,
         integration: {
           select: {
@@ -456,6 +457,13 @@ export class PostsRepository {
     });
   }
 
+  async changeRequestedState(orgId: string, id: string, state: State) {
+    return this._post.model.post.update({
+      where: { id, organizationId: orgId, OR: [{ dispatchControl: null }, { dispatchControl: 'ARMED' }] },
+      data: { state },
+    });
+  }
+
   async changeDate(
     orgId: string,
     id: string,
@@ -467,6 +475,7 @@ export class PostsRepository {
       where: {
         organizationId: orgId,
         id,
+        OR: [{ dispatchControl: null }, { dispatchControl: 'ARMED' }],
       },
       data: {
         publishDate: dayjs(date).toDate(),
@@ -516,8 +525,13 @@ export class PostsRepository {
     // Keep the existing group instead of rotating it, so open clients
     // (calendar) holding the group stay valid. Used by out-of-band updates
     // (agent / MCP / public API); the dashboard keeps the rotate-and-sweep.
-    keepGroup = false
+    keepGroup = false,
+    controlled = false
   ) {
+    const enrolled = body.value[0]?.id ? await this._post.model.post.findFirst({ where: { id: body.value[0].id, organizationId: orgId } }) : null;
+    if (enrolled?.dispatchControl && (body.value.length !== 1 || inter || enrolled.parentPostId)) {
+      throw new Error('Controlled posts require a separate single-post successor');
+    }
     const posts: Post[] = [];
     const uuid = uuidv4();
     const group = keepGroup && body.group ? body.group : uuid;
@@ -571,8 +585,11 @@ export class PostsRepository {
         await this._post.model.post.upsert({
           where: {
             id: value.id || uuidv4(),
+            organizationId: orgId,
+            // A controlled root is immutable after dispatch is claimed or stopped.
+            OR: [{ dispatchControl: null }, { dispatchControl: 'ARMED' }],
           },
-          create: { ...updateData('create') },
+          create: { id: value.id || uuidv4(), ...updateData('create'), ...(controlled ? { dispatchControl: 'ARMED' } : {}) },
           update: {
             ...updateData('update'),
             lastMessage: {

@@ -1,8 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { pipeline, Readable, Transform } from 'stream';
 import { IUploadProvider } from './upload.interface';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { fileTypeStream } = require('file-type');
+import { fileTypeStream } from 'file-type';
 
 // What users may put in the media library, whether by multipart upload or
 // from a remote URL; narrower than what storage itself accepts, no audio
@@ -53,7 +52,7 @@ export async function uploadStreamToStorage(
   webStream: ReadableStream,
   declaredSize = 0
 ) {
-  let sniffed: ReadableStream & { fileType?: { mime: string; ext: string } };
+  let sniffed: Awaited<ReturnType<typeof fileTypeStream>>;
   try {
     sniffed = await fileTypeStream(webStream);
   } catch (err) {

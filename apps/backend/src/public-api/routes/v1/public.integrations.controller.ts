@@ -201,7 +201,11 @@ export class PublicIntegrationsController {
       ? (rawBody.creationMethod as 'CLI' | 'API')
       : 'API';
 
-    return this._postsService.createPost(org.id, body, creationMethod);
+    const controlled = rawBody.deliveryControl === 'dispatch-fence-v1';
+    if (controlled && (process.env.POSTIZ_DISPATCH_FENCE_ENABLED !== 'true' || body.type !== 'draft' || body.inter || body.posts.length !== 1 || body.posts[0].value.length !== 1 || body.posts[0].value[0].id || body.posts[0].group)) {
+      throw new BadRequestException('Dispatch control requires a new single unpublished draft');
+    }
+    return this._postsService.createPost(org.id, body, creationMethod, false, controlled);
   }
 
   @Delete('/posts/:id')

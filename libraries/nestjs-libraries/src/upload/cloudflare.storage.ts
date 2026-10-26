@@ -17,8 +17,7 @@ import axios from 'axios';
 import { isSafePublicHttpsUrl } from '@gitroom/nestjs-libraries/dtos/webhooks/webhook.url.validator';
 import { ssrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 import { parseDataUrl } from '@gitroom/nestjs-libraries/upload/data.url';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const { fileTypeFromBuffer } = require('file-type');
+import { fileTypeFromBuffer } from 'file-type';
 
 const ALLOWED_MIME_TYPES = new Set<string>([
   'image/jpeg',

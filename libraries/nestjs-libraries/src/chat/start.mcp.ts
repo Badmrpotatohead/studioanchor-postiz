@@ -7,6 +7,7 @@ import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/o
 import { OAuthService } from '@gitroom/nestjs-libraries/database/prisma/oauth/oauth.service';
 import { runWithContext } from './async.storage';
 import { createOAuthMiddleware } from './oauth-middleware';
+import { createMcpInputLimits } from './mcp.input-limits';
 import { UPLOAD_WIDGET_URI, uploadWidgetHtml } from '@gitroom/nestjs-libraries/chat/ui/upload.widget';
 import { CLIPPING_WIDGET_URI, clippingWidgetHtml } from '@gitroom/nestjs-libraries/chat/ui/clipping.widget';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
@@ -214,6 +215,11 @@ export const startMcp = async (app: INestApplication) => {
     // directory-reviewed, so they get the full toolset (media generation included)
     '/mcp-oauth-dynamic': { middleware: createResourceMiddleware('/mcp-oauth-dynamic', '/mcp-oauth-dynamic'), mcpServer: oauthServer },
   };
+
+  app.use(
+    [...Object.keys(oauthResources), '/mcp', '/sse', '/message'],
+    ...createMcpInputLimits()
+  );
 
   if (process.env.OPENAI_APP_CHALLANGE) {
     app.use('/.well-known/openai-apps-challenge', (req: Request, res: Response) => {

@@ -21,3 +21,8 @@ dist
 .git
 .github
 reports
+**/.orbit
+**/.next
+**/dist
+**/.env
+**/.env.*
