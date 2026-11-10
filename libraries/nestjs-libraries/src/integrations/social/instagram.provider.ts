@@ -38,7 +38,6 @@ export class InstagramProvider
     'pages_read_engagement',
     'business_management',
     'instagram_content_publish',
-    'instagram_manage_comments',
     'instagram_manage_insights',
   ];
   override maxConcurrentJob = 400;
@@ -1038,37 +1037,8 @@ export class InstagramProvider
     integration: Integration,
     type = 'graph.facebook.com'
   ): Promise<PostResponse[]> {
-    const [accessToken, userToken] = token.split('___');
-    const [commentPost] = postDetails;
-
-    const { id: commentId } = await (
-      await this.fetch(
-        `https://${type}/${META_GRAPH_API_VERSION}/${postId}/comments?message=${encodeURIComponent(
-          commentPost.message
-        )}&access_token=${accessToken}`,
-        {
-          method: 'POST',
-        }
-      )
-    ).json();
-
-    // Get the permalink from the parent post
-    const { permalink } = await (
-      await this.fetch(
-        `https://${type}/${META_GRAPH_API_VERSION}/${postId}?fields=permalink&access_token=${
-          userToken || accessToken
-        }`
-      )
-    ).json();
-
-    return [
-      {
-        id: commentPost.id,
-        postId: commentId,
-        releaseURL: permalink,
-        status: 'success',
-      },
-    ];
+    // StudioAnchor intentionally omits instagram_manage_comments.
+    return [];
   }
 
   private setTitle(name: string) {

@@ -66,13 +66,8 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
   dto = YoutubeSettingsDto;
   scopes = [
     'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/youtube',
-    'https://www.googleapis.com/auth/youtube.force-ssl',
     'https://www.googleapis.com/auth/youtube.readonly',
     'https://www.googleapis.com/auth/youtube.upload',
-    'https://www.googleapis.com/auth/youtubepartner',
-    'https://www.googleapis.com/auth/yt-analytics.readonly',
   ];
 
   editor = 'normal' as const;
@@ -348,7 +343,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
     try {
       // Get all channels the user has access to
       const response = await youtubeClient.channels.list({
-        part: ['snippet', 'contentDetails', 'statistics'],
+        part: ['snippet'],
         mine: true,
       });
 
@@ -363,7 +358,6 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
           },
         },
         username: channel.snippet?.customUrl || '',
-        subscriberCount: channel.statistics?.subscriberCount || '0',
       }));
     } catch (error) {
       console.error('Failed to fetch YouTube channels:', error);
@@ -378,7 +372,7 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
 
     try {
       const response = await youtubeClient.channels.list({
-        part: ['snippet', 'contentDetails', 'statistics'],
+        part: ['snippet'],
         id: [data.id],
       });
 

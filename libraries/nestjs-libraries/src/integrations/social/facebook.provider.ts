@@ -36,7 +36,6 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     'pages_show_list',
     'business_management',
     'pages_manage_posts',
-    'pages_manage_engagement',
     'pages_read_engagement',
     'read_insights',
   ];
@@ -939,36 +938,8 @@ export class FacebookProvider extends SocialAbstract implements SocialProvider {
     postDetails: PostDetails<FacebookDto>[],
     integration: Integration
   ): Promise<PostResponse[]> {
-    const [commentPost] = postDetails;
-    const replyToId = lastCommentId || postId;
-
-    const data = await (
-      await this.fetch(
-        `https://graph.facebook.com/${META_GRAPH_API_VERSION}/${replyToId}/comments?access_token=${accessToken}&fields=id,permalink_url`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            ...(commentPost.media?.length
-              ? { attachment_url: commentPost.media[0].path }
-              : {}),
-            message: commentPost.message,
-          }),
-        },
-        'add comment'
-      )
-    ).json();
-
-    return [
-      {
-        id: commentPost.id,
-        postId: data.id,
-        releaseURL: data.permalink_url,
-        status: 'success',
-      },
-    ];
+    // StudioAnchor intentionally omits pages_manage_engagement.
+    return [];
   }
 
   async analytics(

@@ -45,12 +45,8 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
   isBetweenSteps = false;
   convertToJPEG = true;
   scopes = [
-    'video.list',
     'user.info.basic',
     'video.publish',
-    'video.upload',
-    'user.info.profile',
-    'user.info.stats',
   ];
   override maxConcurrentJob = 10000;
   dto = TikTokDto;
@@ -333,11 +329,11 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
 
     const {
       data: {
-        user: { avatar_url, display_name, open_id, username },
+        user: { avatar_url, display_name, open_id },
       },
     } = await (
       await fetch(
-        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,avatar_url,display_name,union_id,username',
+        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,avatar_url,display_name',
         {
           method: 'GET',
           headers: {
@@ -354,7 +350,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
       id: open_id.replace(/-/g, ''),
       name: display_name,
       picture: avatar_url || '',
-      username: username,
+      username: display_name,
     };
   }
 
@@ -412,11 +408,11 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
 
     const {
       data: {
-        user: { avatar_url, display_name, open_id, username },
+        user: { avatar_url, display_name, open_id },
       },
     } = await (
       await fetch(
-        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,avatar_url,display_name,union_id,username',
+        'https://open.tiktokapis.com/v2/user/info/?fields=open_id,avatar_url,display_name',
         {
           method: 'GET',
           headers: {
@@ -433,7 +429,7 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
       refreshToken: refresh_token,
       expiresIn: dayjs().add(23, 'hours').unix() - dayjs().unix(),
       picture: avatar_url,
-      username: username,
+      username: display_name,
     };
   }
 
@@ -538,29 +534,28 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
     return { status: 'pending', pendingData };
   }
 
-  // UPLOAD does not publish - it only drops the media into the user's TikTok
-  // inbox - so only an explicit UPLOAD selects it. A missing value (drafts, or
-  // any caller that skipped the setting) publishes instead of silently landing
-  // in the inbox.
+  // StudioAnchor requests only video.publish. Refuse legacy inbox-upload drafts
+  // instead of attempting an endpoint that requires the omitted video.upload
+  // scope or silently converting the user's intent into a direct publication.
   private contentPostingMethod(
     firstPost: PostDetails<TikTokDto>
   ): TikTokDto['content_posting_method'] {
-    return firstPost?.settings?.content_posting_method === 'UPLOAD'
-      ? 'UPLOAD'
-      : 'DIRECT_POST';
+    if (firstPost?.settings?.content_posting_method === 'UPLOAD') {
+      throw new BadBody(
+        this.identifier,
+        '{}',
+        '{}',
+        'TikTok inbox upload is unavailable; choose Direct Post'
+      );
+    }
+    return 'DIRECT_POST';
   }
 
   private postingMethod(
     method: TikTokDto['content_posting_method'],
     isPhoto: boolean
   ): string {
-    switch (method) {
-      case 'UPLOAD':
-        return isPhoto ? '/content/init/' : '/inbox/video/init/';
-      case 'DIRECT_POST':
-      default:
-        return isPhoto ? '/content/init/' : '/video/init/';
-    }
+    return isPhoto ? '/content/init/' : '/video/init/';
   }
 
   private buildTikokPostInfoBody(firstPost: PostDetails<TikTokDto>) {

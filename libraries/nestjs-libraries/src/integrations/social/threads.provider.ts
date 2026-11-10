@@ -13,10 +13,8 @@ import {
   BadBody,
   SocialAbstract,
 } from '@gitroom/nestjs-libraries/integrations/social.abstract';
-import { capitalize, chunk } from 'lodash';
-import { Plug } from '@gitroom/helpers/decorators/plug.decorator';
+import { chunk } from 'lodash';
 import { Integration } from '@prisma/client';
-import { stripHtmlValidation } from '@gitroom/helpers/utils/strip.html.validation';
 import { hasExtension } from '@gitroom/helpers/utils/has.extension';
 
 export class ThreadsProvider extends SocialAbstract implements SocialProvider {
@@ -26,9 +24,6 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
   scopes = [
     'threads_basic',
     'threads_content_publish',
-    'threads_manage_replies',
-    'threads_manage_insights',
-    // 'threads_profile_discovery',
   ];
   override maxConcurrentJob = 2; // Threads has moderate rate limits
   refreshCron = true;
@@ -683,36 +678,8 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
     }>[],
     integration: Integration
   ): Promise<PostResponse[]> {
-    if (!postDetails.length) {
-      return [];
-    }
-
-    const [commentPost] = postDetails;
-    const replyToId = lastCommentId || postId;
-
-    // Create reply content
-    const replyContentId = await this.createThreadContent(
-      userId,
-      accessToken,
-      commentPost,
-      replyToId
-    );
-
-    // Publish the reply
-    const { threadId: replyThreadId, permalink } = await this.publishThread(
-      userId,
-      accessToken,
-      replyContentId
-    );
-
-    return [
-      {
-        id: commentPost.id,
-        postId: replyThreadId,
-        status: 'success',
-        releaseURL: permalink,
-      },
-    ];
+    // StudioAnchor intentionally omits threads_manage_replies.
+    return [];
   }
 
   async analytics(
@@ -720,95 +687,16 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
     accessToken: string,
     date: number
   ): Promise<AnalyticsData[]> {
-    const until = dayjs().endOf('day').unix();
-    const since = dayjs().subtract(date, 'day').unix();
-
-    const { data, ...all } = await (
-      await fetch(
-        `https://graph.threads.net/v1.0/${id}/threads_insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}&period=day&since=${since}&until=${until}`
-      )
-    ).json();
-
-    return (
-      data?.map((d: any) => ({
-        label: capitalize(d.name),
-        percentageChange: 5,
-        data: d.total_value
-          ? [{ total: d.total_value.value, date: dayjs().format('YYYY-MM-DD') }]
-          : d.values.map((v: any) => ({
-              total: v.value,
-              date: dayjs(v.end_time).format('YYYY-MM-DD'),
-            })),
-      })) || []
-    );
+    // StudioAnchor does not read Threads analytics.
+    return [];
   }
 
-  @Plug({
-    identifier: 'threads-autoPlugPost',
-    title: 'Auto plug post',
-    description:
-      'When a post reached a certain number of likes, add another post to it so you followers get a notification about your promotion',
-    runEveryMilliseconds: 21600000,
-    totalRuns: 3,
-    fields: [
-      {
-        name: 'likesAmount',
-        type: 'number',
-        placeholder: 'Amount of likes',
-        description: 'The amount of likes to trigger the repost',
-        validation: /^\d+$/,
-      },
-      {
-        name: 'post',
-        type: 'richtext',
-        placeholder: 'Post to plug',
-        description: 'Message content to plug',
-        validation: /^[\s\S]{3,}$/g,
-      },
-    ],
-  })
   async autoPlugPost(
     integration: Integration,
     id: string,
     fields: { likesAmount: string; post: string }
   ) {
-    const { data } = await (
-      await fetch(
-        `https://graph.threads.net/v1.0/${id}/insights?metric=likes&access_token=${integration.token}`
-      )
-    ).json();
-
-    const {
-      values: [value],
-    } = data.find((p: any) => p.name === 'likes');
-
-    if (value.value >= fields.likesAmount) {
-      await timer(2000);
-
-      const form = new FormData();
-      form.append('media_type', 'TEXT');
-      form.append('text', stripHtmlValidation('normal', fields.post, true));
-      form.append('reply_to_id', id);
-      form.append('access_token', integration.token);
-
-      const { id: replyId } = await (
-        await this.fetch('https://graph.threads.net/v1.0/me/threads', {
-          method: 'POST',
-          body: form,
-        })
-      ).json();
-
-      await (
-        await this.fetch(
-          `https://graph.threads.net/v1.0/${integration.internalId}/threads_publish?creation_id=${replyId}&access_token=${integration.token}`,
-          {
-            method: 'POST',
-          }
-        )
-      ).json();
-      return true;
-    }
-
+    // Requires both insights and reply permissions, which StudioAnchor omits.
     return false;
   }
 
@@ -818,60 +706,8 @@ export class ThreadsProvider extends SocialAbstract implements SocialProvider {
     postId: string,
     date: number
   ): Promise<AnalyticsData[]> {
-    const today = dayjs().format('YYYY-MM-DD');
-
-    try {
-      // Fetch thread insights from Threads API
-      const { data } = await (
-        await fetch(
-          `https://graph.threads.net/v1.0/${postId}/insights?metric=views,likes,replies,reposts,quotes&access_token=${accessToken}`
-        )
-      ).json();
-
-      if (!data || data.length === 0) {
-        return [];
-      }
-
-      const result: AnalyticsData[] = [];
-
-      for (const metric of data) {
-        const value = metric.values?.[0]?.value ?? metric.total_value?.value;
-        if (value === undefined) continue;
-
-        let label = '';
-
-        switch (metric.name) {
-          case 'views':
-            label = 'Views';
-            break;
-          case 'likes':
-            label = 'Likes';
-            break;
-          case 'replies':
-            label = 'Replies';
-            break;
-          case 'reposts':
-            label = 'Reposts';
-            break;
-          case 'quotes':
-            label = 'Quotes';
-            break;
-        }
-
-        if (label) {
-          result.push({
-            label,
-            percentageChange: 0,
-            data: [{ total: String(value), date: today }],
-          });
-        }
-      }
-
-      return result;
-    } catch (err) {
-      console.error('Error fetching Threads post analytics:', err);
-      return [];
-    }
+    // StudioAnchor intentionally omits threads_manage_insights.
+    return [];
   }
 
   // override async mention(
