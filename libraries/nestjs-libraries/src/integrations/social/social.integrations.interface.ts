@@ -15,6 +15,12 @@ export interface IAuthenticator {
     clientInformation?: ClientInformation
   ): Promise<AuthTokenDetails | string>;
   refreshToken(refreshToken: string): Promise<AuthTokenDetails>;
+  // disconnect-purge-v1: best-effort revocation at the provider, called after
+  // a deleted channel's stored tokens were cleared. Resolves false on failure.
+  revokeToken?(
+    accessToken: string,
+    refreshToken?: string | null
+  ): Promise<boolean>;
   reConnect?(
     id: string,
     requiredId: string,

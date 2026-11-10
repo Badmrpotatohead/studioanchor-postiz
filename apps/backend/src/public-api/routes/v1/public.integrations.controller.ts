@@ -60,6 +60,7 @@ import {
   saveConnectReturn,
   validateConnectReturn,
 } from '@gitroom/nestjs-libraries/integrations/connect.return';
+import { DISCONNECT_PURGE_PROTOCOL } from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 @ApiTags('Public API')
 @Controller('/public/v1')
@@ -280,7 +281,10 @@ export class PublicIntegrationsController {
   getChannelControls() {
     Sentry.metrics.count('public_api-request', 1);
     return {
-      protocols: connectReturnOrigins().length ? [CONNECT_RETURN_PROTOCOL] : [],
+      protocols: [
+        DISCONNECT_PURGE_PROTOCOL,
+        ...(connectReturnOrigins().length ? [CONNECT_RETURN_PROTOCOL] : []),
+      ],
     };
   }
 

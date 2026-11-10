@@ -24,6 +24,10 @@ import { createReadStream, statSync } from 'fs';
 import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 import { setHeartbeatDetails } from '@gitroom/nestjs-libraries/temporal/temporal.heartbeat';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import {
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 const clientAndYoutube = () => {
   const client = new google.auth.OAuth2({
@@ -257,6 +261,14 @@ export class YoutubeProvider extends SocialAbstract implements SocialProvider {
     }
 
     return undefined;
+  }
+
+  // disconnect-purge-v1: revoking the refresh token ends the Google grant.
+  async revokeToken(accessToken: string, refreshToken?: string | null) {
+    return revokeRequest(
+      'https://oauth2.googleapis.com/revoke',
+      formRequest({ token: refreshToken || accessToken })
+    );
   }
 
   async refreshToken(refresh_token: string): Promise<AuthTokenDetails> {

@@ -7,6 +7,7 @@ import { makeId } from '@gitroom/nestjs-libraries/services/make.is';
 import { IntegrationTimeDto } from '@gitroom/nestjs-libraries/dtos/integrations/integration.time.dto';
 import { UploadFactory } from '@gitroom/nestjs-libraries/upload/upload.factory';
 import { PlugDto } from '@gitroom/nestjs-libraries/dtos/plugs/plug.dto';
+import { purgedIntegrationData } from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 @Injectable()
 export class IntegrationRepository {
@@ -296,6 +297,16 @@ export class IntegrationRepository {
     timezone?: number,
     customInstanceDetails?: string
   ) {
+    // disconnect-purge-v1: reconnecting revives a purged row; restore its name.
+    await this._integration.model.integration.updateMany({
+      where: {
+        organizationId: org,
+        internalId,
+        deletedAt: { not: null },
+      },
+      data: { name },
+    });
+
     const postTimes = timezone
       ? {
           postingTimes: JSON.stringify([
@@ -741,6 +752,8 @@ export class IntegrationRepository {
     });
   }
 
+  // disconnect-purge-v1: credentials and identifying fields are cleared in
+  // the same update that sets deletedAt. Posts are not touched here.
   deleteChannel(org: string, id: string) {
     return this._integration.model.integration.update({
       where: {
@@ -749,8 +762,28 @@ export class IntegrationRepository {
       },
       data: {
         deletedAt: new Date(),
+        ...purgedIntegrationData(),
       },
     });
+  }
+
+  // disconnect-purge-v1: another live channel still uses this grant, so it
+  // must not be revoked at the provider.
+  async isTokenShared(id: string, token: string, refreshToken: string | null) {
+    const tokens = [token, refreshToken].filter((value): value is string =>
+      Boolean(value)
+    );
+    if (!tokens.length) {
+      return false;
+    }
+    return !!(await this._integration.model.integration.findFirst({
+      where: {
+        id: { not: id },
+        deletedAt: null,
+        OR: [{ token: { in: tokens } }, { refreshToken: { in: tokens } }],
+      },
+      select: { id: true },
+    }));
   }
 
   async deleteIntegrationsForAccount(org: string) {

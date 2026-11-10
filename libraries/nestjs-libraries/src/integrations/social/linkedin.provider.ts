@@ -24,6 +24,10 @@ import { LinkedinDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-sett
 import imageToPDF from 'image-to-pdf';
 import { Readable } from 'stream';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import {
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 // Travels through the workflow history between postPending, checkPostStatus
 // and finalizePost - keep it small JSON (media urns and the post content, never
@@ -125,6 +129,18 @@ export class LinkedinProvider extends SocialAbstract implements SocialProvider {
     }
 
     return undefined;
+  }
+
+  // disconnect-purge-v1: LinkedIn token revocation (also used by LinkedIn Pages).
+  async revokeToken(accessToken: string) {
+    return revokeRequest(
+      'https://www.linkedin.com/oauth/v2/revoke',
+      formRequest({
+        client_id: process.env.LINKEDIN_CLIENT_ID!,
+        client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+        token: accessToken,
+      })
+    );
   }
 
   async refreshToken(refresh_token: string): Promise<AuthTokenDetails> {

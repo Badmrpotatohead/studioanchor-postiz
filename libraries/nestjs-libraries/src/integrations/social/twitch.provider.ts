@@ -10,6 +10,10 @@ import { SocialAbstract } from '@gitroom/nestjs-libraries/integrations/social.ab
 import { Integration } from '@prisma/client';
 import { TwitchDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/twitch.dto';
 import { timer } from '@gitroom/helpers/utils/timer';
+import {
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 export class TwitchProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 1;
@@ -22,6 +26,14 @@ export class TwitchProvider extends SocialAbstract implements SocialProvider {
 
   maxLength() {
     return 500; // Twitch chat message max length
+  }
+
+  // disconnect-purge-v1: Twitch access token revocation.
+  async revokeToken(accessToken: string) {
+    return revokeRequest(
+      'https://id.twitch.tv/oauth2/revoke',
+      formRequest({ client_id: process.env.TWITCH_CLIENT_ID!, token: accessToken })
+    );
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokenDetails> {

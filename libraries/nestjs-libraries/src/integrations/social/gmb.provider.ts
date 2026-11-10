@@ -17,6 +17,10 @@ import * as process from 'node:process';
 import dayjs from 'dayjs';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
 import { GmbSettingsDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/gmb.settings.dto';
+import {
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 const clientAndGmb = () => {
   const client = new google.auth.OAuth2({
@@ -131,6 +135,14 @@ export class GmbProvider extends SocialAbstract implements SocialProvider {
     }
 
     return undefined;
+  }
+
+  // disconnect-purge-v1: revoking the refresh token ends the Google grant.
+  async revokeToken(accessToken: string, refreshToken?: string | null) {
+    return revokeRequest(
+      'https://oauth2.googleapis.com/revoke',
+      formRequest({ token: refreshToken || accessToken })
+    );
   }
 
   async refreshToken(refresh_token: string): Promise<AuthTokenDetails> {

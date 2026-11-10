@@ -15,6 +15,9 @@ import dayjs from 'dayjs';
 import { Integration } from '@prisma/client';
 import { SlackDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/slack.dto';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
+import {
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 export class SlackProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 3; // Slack has moderate API limits
@@ -48,6 +51,14 @@ export class SlackProvider extends SocialAbstract implements SocialProvider {
 
   maxLength() {
     return 400000;
+  }
+
+  // disconnect-purge-v1: Slack revokes the stored token itself.
+  async revokeToken(accessToken: string) {
+    return revokeRequest('https://slack.com/api/auth.revoke', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokenDetails> {

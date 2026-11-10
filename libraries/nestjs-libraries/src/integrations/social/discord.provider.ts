@@ -10,6 +10,11 @@ import { Integration } from '@prisma/client';
 import { DiscordDto } from '@gitroom/nestjs-libraries/dtos/posts/providers-settings/discord.dto';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import FormDataUpload from 'form-data';
+import {
+  basicAuth,
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 export class DiscordProvider extends SocialAbstract implements SocialProvider {
   override maxConcurrentJob = 5; // Discord has generous rate limits for webhook posting
@@ -22,6 +27,19 @@ export class DiscordProvider extends SocialAbstract implements SocialProvider {
     return 1980;
   }
   dto = DiscordDto;
+
+  // disconnect-purge-v1: revoking the refresh token ends the Discord grant.
+  async revokeToken(accessToken: string, refreshToken?: string | null) {
+    return revokeRequest(
+      'https://discord.com/api/oauth2/token/revoke',
+      formRequest(
+        refreshToken
+          ? { token: refreshToken, token_type_hint: 'refresh_token' }
+          : { token: accessToken, token_type_hint: 'access_token' },
+        basicAuth(process.env.DISCORD_CLIENT_ID, process.env.DISCORD_CLIENT_SECRET)
+      )
+    );
+  }
 
   async refreshToken(refreshToken: string): Promise<AuthTokenDetails> {
     const { access_token, expires_in, refresh_token } = await (

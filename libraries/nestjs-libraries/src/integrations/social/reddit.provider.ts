@@ -20,6 +20,11 @@ import FormDataUpload from 'form-data';
 import { Tool } from '@gitroom/nestjs-libraries/integrations/tool.decorator';
 import { Integration } from '@prisma/client';
 import { hasExtension } from '@gitroom/helpers/utils/has.extension';
+import {
+  basicAuth,
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 // Travels through the workflow history between postPending, checkPostStatus
 // and finalizePost. The cursor makes every subreddit submit its own
@@ -87,6 +92,19 @@ export class RedditProvider extends SocialAbstract implements SocialProvider {
     }
 
     return true;
+  }
+
+  // disconnect-purge-v1: revoking the refresh token also revokes its access tokens.
+  async revokeToken(accessToken: string, refreshToken?: string | null) {
+    return revokeRequest(
+      'https://www.reddit.com/api/v1/revoke_token',
+      formRequest(
+        refreshToken
+          ? { token: refreshToken, token_type_hint: 'refresh_token' }
+          : { token: accessToken, token_type_hint: 'access_token' },
+        basicAuth(process.env.REDDIT_CLIENT_ID, process.env.REDDIT_CLIENT_SECRET)
+      )
+    );
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokenDetails> {

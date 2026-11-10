@@ -22,6 +22,10 @@ import { createReadStream } from 'fs';
 import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
 import { Integration } from '@prisma/client';
 import { Rules } from '@gitroom/nestjs-libraries/chat/rules.description.decorator';
+import {
+  formRequest,
+  revokeRequest,
+} from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
 
 @Rules(
   [
@@ -291,6 +295,18 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
 
     // Fall back to parent class error handling
     return undefined;
+  }
+
+  // disconnect-purge-v1: TikTok revokes the user's authorization for the app.
+  async revokeToken(accessToken: string) {
+    return revokeRequest(
+      'https://open.tiktokapis.com/v2/oauth/revoke/',
+      formRequest({
+        client_key: process.env.TIKTOK_CLIENT_ID!,
+        client_secret: process.env.TIKTOK_CLIENT_SECRET!,
+        token: accessToken,
+      })
+    );
   }
 
   async refreshToken(refreshToken: string): Promise<AuthTokenDetails> {

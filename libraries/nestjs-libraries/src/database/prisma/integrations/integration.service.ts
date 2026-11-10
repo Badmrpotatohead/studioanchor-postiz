@@ -386,8 +386,43 @@ export class IntegrationService {
     return this._integrationRepository.getPostsForChannel(org, id);
   }
 
+  // disconnect-purge-v1: purge first, then revoke at the provider with the
+  // tokens read before the purge. Revocation never blocks the deletion.
   async deleteChannel(org: string, id: string) {
-    return this._integrationRepository.deleteChannel(org, id);
+    const integration = await this._integrationRepository.getIntegrationById(
+      org,
+      id
+    );
+    const deleted = await this._integrationRepository.deleteChannel(org, id);
+    if (integration && !integration.deletedAt) {
+      await this.revokeDeletedChannelToken(integration);
+    }
+    return deleted;
+  }
+
+  async revokeDeletedChannelToken(integration: Integration) {
+    try {
+      const provider = this._integrationManager.getSocialIntegration(
+        integration.providerIdentifier
+      );
+      if (
+        !provider?.revokeToken ||
+        (!integration.token && !integration.refreshToken) ||
+        (await this._integrationRepository.isTokenShared(
+          integration.id,
+          integration.token,
+          integration.refreshToken
+        ))
+      ) {
+        return false;
+      }
+      return await provider.revokeToken(
+        integration.token,
+        integration.refreshToken
+      );
+    } catch {
+      return false;
+    }
   }
 
   async disableIntegrations(org: string, totalChannels: number) {

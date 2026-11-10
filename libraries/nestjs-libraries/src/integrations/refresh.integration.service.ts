@@ -27,6 +27,16 @@ export class RefreshIntegrationService {
       return false as const;
     }
 
+    // disconnect-purge-v1: never write fresh tokens into a channel that was
+    // deleted while the refresh was running.
+    const current = await this._integrationService.getIntegrationById(
+      integration.organizationId,
+      integration.id
+    );
+    if (!current || current.deletedAt) {
+      return false as const;
+    }
+
     await this._integrationService.createOrUpdateIntegration(
       undefined,
       !!socialProvider.oneTimeToken,

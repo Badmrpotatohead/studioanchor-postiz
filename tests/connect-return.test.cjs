@@ -124,7 +124,7 @@ test('the public API and connect controller use the checks and stay upstream wit
   assert.match(publicApi, /returnTo && returnOrigins\.length\s+\? validateConnectReturn\(returnTo, returnOrigins\)/);
   assert.match(publicApi, /throw new HttpException\(\{ msg: 'Return target not allowed' \}, 400\)/);
   assert.match(publicApi, /return \{ url, returnIntent: CONNECT_RETURN_PROTOCOL \};/);
-  assert.match(publicApi, /protocols: connectReturnOrigins\(\)\.length \? \[CONNECT_RETURN_PROTOCOL\] : \[\]/);
+  assert.match(publicApi, /connectReturnOrigins\(\)\.length \? \[CONNECT_RETURN_PROTOCOL\] : \[\]/);
   const connect = fs.readFileSync(
     'apps/backend/src/api/routes/no.auth.integrations.controller.ts',
     'utf8'
