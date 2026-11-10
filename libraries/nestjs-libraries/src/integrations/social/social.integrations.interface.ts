@@ -1,4 +1,5 @@
 import { Integration } from '@prisma/client';
+import type { TikTokCreatorInfo } from '@gitroom/nestjs-libraries/integrations/tiktok.creator.info';
 
 export interface ClientInformation {
   client_id: string;
@@ -54,6 +55,7 @@ export interface IAuthenticator {
     id: string,
     accessToken: string
   ): Promise<{ id: string; url: string }[]>;
+  creatorInfo?(accessToken: string): Promise<TikTokCreatorInfo>;
 }
 
 export interface AnalyticsData {

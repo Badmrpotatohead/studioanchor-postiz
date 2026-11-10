@@ -48,6 +48,7 @@
     "test:connect-return": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register --test tests/connect-return.test.cjs",
     "test:disconnect-purge": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register --test tests/disconnect-purge.test.cjs",
     "test:disconnect-purge:db": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register --test tests/disconnect-purge.integration.test.ts",
+    "test:tiktok-creator-info": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register --test tests/tiktok-creator-info.test.cjs",
     "purge:deleted-integrations": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register scripts/studioanchor/purge-deleted-integrations.ts",
     "test:provider-mcp-security": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register tests/provider.mcp-security.test.cjs"
   },

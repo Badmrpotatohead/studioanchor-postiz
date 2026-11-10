@@ -61,6 +61,7 @@ import {
   validateConnectReturn,
 } from '@gitroom/nestjs-libraries/integrations/connect.return';
 import { DISCONNECT_PURGE_PROTOCOL } from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
+import { TIKTOK_CREATOR_INFO_PROTOCOL } from '@gitroom/nestjs-libraries/integrations/tiktok.creator.info';
 
 @ApiTags('Public API')
 @Controller('/public/v1')
@@ -283,9 +284,36 @@ export class PublicIntegrationsController {
     return {
       protocols: [
         DISCONNECT_PURGE_PROTOCOL,
+        TIKTOK_CREATOR_INFO_PROTOCOL,
         ...(connectReturnOrigins().length ? [CONNECT_RETURN_PROTOCOL] : []),
       ],
     };
+  }
+
+  @Get('/integrations/:id/tiktok-creator-info')
+  async getTikTokCreatorInfo(
+    @GetOrgFromRequest() org: Organization,
+    @Param('id') id: string
+  ) {
+    Sentry.metrics.count('public_api-request', 1);
+    const integration = await this._integrationService.getIntegrationById(
+      org.id,
+      id
+    );
+    if (
+      !integration ||
+      integration.providerIdentifier !== 'tiktok' ||
+      integration.disabled ||
+      integration.deletedAt ||
+      !integration.token
+    ) {
+      throw new HttpException({ msg: 'TikTok integration not found' }, 404);
+    }
+    const provider = this._integrationManager.getSocialIntegration('tiktok');
+    if (!provider.creatorInfo) {
+      throw new HttpException({ msg: 'TikTok creator information unavailable' }, 503);
+    }
+    return provider.creatorInfo(integration.token);
   }
 
   @Get('/social/:integration')

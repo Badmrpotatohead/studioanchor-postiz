@@ -26,6 +26,10 @@ import {
   formRequest,
   revokeRequest,
 } from '@gitroom/nestjs-libraries/integrations/disconnect.purge';
+import {
+  projectTikTokCreatorInfo,
+  TikTokCreatorInfo,
+} from '@gitroom/nestjs-libraries/integrations/tiktok.creator.info';
 
 @Rules(
   [
@@ -433,11 +437,8 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
     };
   }
 
-  async maxVideoLength(accessToken: string) {
-    const {
-      data: { max_video_post_duration_sec },
-    } = await (
-      await fetch(
+  async creatorInfo(accessToken: string): Promise<TikTokCreatorInfo> {
+    const response = await fetch(
         'https://open.tiktokapis.com/v2/post/publish/creator_info/query/',
         {
           method: 'POST',
@@ -446,9 +447,15 @@ export class TiktokProvider extends SocialAbstract implements SocialProvider {
             Authorization: `Bearer ${accessToken}`,
           },
         }
-      )
-    ).json();
+      );
+    if (!response.ok) {
+      throw new Error('TikTok creator information is unavailable');
+    }
+    return projectTikTokCreatorInfo(await response.json());
+  }
 
+  async maxVideoLength(accessToken: string) {
+    const { max_video_post_duration_sec } = await this.creatorInfo(accessToken);
     return {
       maxDurationSeconds: max_video_post_duration_sec,
     };
