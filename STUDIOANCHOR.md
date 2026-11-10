@@ -9,9 +9,9 @@ StudioAnchor is not affiliated with, endorsed by, or operated by Postiz or Gitro
 | | |
 | --- | --- |
 | Upstream base | [`8b84b0dc2767b757c2355158573635600ae027c7`](https://github.com/gitroomhq/postiz-app/commit/8b84b0dc2767b757c2355158573635600ae027c7) (tag `v2.24.0`) |
-| Modification | Three commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`) and `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`) |
+| Modification | Four commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`), `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`) and `tiktok-creator-info-v1.patch` (sha256 `b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce`) |
 | Date modified | 2026-10-24 (dispatch fence); 2026-11-09 (connect return, disconnect purge) |
-| Build | Image `studioanchor/postiz:v2.24.0-sa-connect1`, built with [`Dockerfile.studioanchor`](Dockerfile.studioanchor). The previous image, `v2.24.0-sa-fence2`, contains only the dispatch fence. |
+| Build | Image `studioanchor/postiz:v2.24.0-sa-tiktok1`, built with [`Dockerfile.studioanchor`](Dockerfile.studioanchor). The previous image, `v2.24.0-sa-connect1`, contains the dispatch fence plus account connect and disconnect patches. |
 
 The changes:
 
@@ -22,6 +22,7 @@ The changes:
 - **Tests.** Database, workflow and security tests are added under `tests/`; see `tests/DELIVERY_STOP_QA.md`.
 - **Connect return (`connect-return-v1`).** `GET /public/v1/social/:provider` accepts an optional `returnTo` URL. When `POSTIZ_CONNECT_RETURN_ORIGINS` lists its exact HTTPS origin, the return intent is stored next to the OAuth state (one use, one hour, bound to the provider) and the response includes `returnIntent: "connect-return-v1"`. Any other origin is refused. After the provider callback saves the channel, the callback page shows a minimal StudioAnchor completion screen and returns to that URL with `connect=connected` or `connect=failed`. When the variable is unset, the route ignores `returnTo` and the callback page is unchanged from upstream. `GET /public/v1/channel-controls` lists the protocols this server provides.
 - **Disconnect purge (`disconnect-purge-v1`).** Deleting a channel, through the public API, the app or the enterprise route, clears its token, refresh token, token expiry, custom instance details, name, picture, profile and additional settings in the same update that sets `deletedAt`. `internalId`, `rootInternalId`, `providerIdentifier` and `organizationId` are kept for the uniqueness and reconnect logic, and a reconnect restores the name. The grant is then revoked at the provider, best-effort, for Google (YouTube and Business Profile), LinkedIn and LinkedIn Pages, TikTok, Reddit, Discord, Twitch and Slack, unless another live channel shares it. Other providers have no revocation API this build can call. A token refresh that finishes after a deletion no longer writes tokens back. `scripts/studioanchor/purge-deleted-integrations.ts` purges channels deleted before this change. It does a dry run by default and only executes with a backup file written in the last 24 hours plus the approved plan digest. Posts and the dispatch-fence columns are never changed.
+- **TikTok creator info (`tiktok-creator-info-v1`).** An organization-authenticated `GET /public/v1/integrations/:id/tiktok-creator-info` route queries TikTok immediately through the selected connected account. It returns only nickname, avatar URL, current privacy choices, disabled interaction flags and the current maximum video duration. The route rejects non-TikTok, deleted, disabled and cross-organization integrations, and `GET /public/v1/channel-controls` advertises the protocol so clients can hide Direct Post when the patch is absent.
 
 Files added or modified (all others are unchanged from upstream):
 
@@ -95,6 +96,15 @@ Added or modified by `connect-return-v1` and `disconnect-purge-v1`:
 - `scripts/studioanchor/purge-deleted-integrations.ts` (added)
 - `tests/connect-return.test.cjs`, `tests/disconnect-purge.test.cjs` and `tests/disconnect-purge.integration.test.ts` (added)
 
+Added or modified by `tiktok-creator-info-v1`:
+
+- `apps/backend/src/public-api/routes/v1/public.integrations.controller.ts` (modified)
+- `libraries/nestjs-libraries/src/integrations/social/social.integrations.interface.ts` (modified)
+- `libraries/nestjs-libraries/src/integrations/social/tiktok.provider.ts` (modified)
+- `libraries/nestjs-libraries/src/integrations/tiktok.creator.info.ts` (added)
+- `package.json` (modified)
+- `tests/tiktok-creator-info.test.cjs` (added)
+
 This file (`STUDIOANCHOR.md`) and `Dockerfile.studioanchor` are also added.
 
 ## Building
@@ -103,12 +113,13 @@ From the repository root:
 
 ```bash
 docker build -f Dockerfile.studioanchor \
-  --build-arg NEXT_PUBLIC_VERSION=v2.24.0-sa-connect1 \
+  --build-arg NEXT_PUBLIC_VERSION=v2.24.0-sa-tiktok1 \
   --build-arg SOURCE_BASE=8b84b0dc2767b757c2355158573635600ae027c7 \
   --build-arg PATCH_SHA256=dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd \
   --build-arg CONNECT_RETURN_PATCH_SHA256=dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b \
   --build-arg DISCONNECT_PURGE_PATCH_SHA256=fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e \
-  -t studioanchor/postiz:v2.24.0-sa-connect1 .
+  --build-arg TIKTOK_CREATOR_INFO_PATCH_SHA256=b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce \
+  -t studioanchor/postiz:v2.24.0-sa-tiktok1 .
 ```
 
 The image uses Node 22.22.0, PNPM 10.6.1 and `pnpm install --frozen-lockfile`. Runtime configuration and secrets are supplied by the deployment environment and are not part of the image.
@@ -116,6 +127,10 @@ The image uses Node 22.22.0, PNPM 10.6.1 and `pnpm install --frozen-lockfile`. R
 ## Running connect return and disconnect purge
 
 Neither change alters the database schema. Set `POSTIZ_CONNECT_RETURN_ORIGINS` to the exact HTTPS origins allowed as return targets (comma-separated), for example `https://marketing.studioanchor.app`. Leave it unset to keep upstream connect behaviour. To purge channels deleted before this build, back up the database, then run `pnpm run purge:deleted-integrations` (a dry run). Then run it again with `-- --execute --backup=<file> --approve=<plan digest> --approved-by="<operator>"`.
+
+## Running TikTok creator info
+
+No new environment variable or schema change is required. The public API key still scopes every request to its organization. Verify `tiktok-creator-info-v1` in `GET /public/v1/channel-controls` before exposing Direct Post, then query the creator-info route with an organization-owned TikTok integration immediately before presenting or accepting posting settings.
 
 ## Running with the fence
 

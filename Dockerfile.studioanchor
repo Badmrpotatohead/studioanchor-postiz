@@ -1,5 +1,6 @@
 # Upstream Dockerfile.dev at v2.24.0, pinned for the StudioAnchor builds
-# (dispatch-fence-v1, connect-return-v1, disconnect-purge-v1).
+# (dispatch-fence-v1, connect-return-v1, disconnect-purge-v1,
+# tiktok-creator-info-v1).
 # Runtime secrets stay in the Compose environment; nothing secret is baked in.
 FROM node:22.22.0-bookworm-slim@sha256:dd9d21971ec4395903fa6143c2b9267d048ae01ca6d3ea96f16cb30df6187d94
 ARG NEXT_PUBLIC_VERSION
@@ -7,15 +8,17 @@ ARG SOURCE_BASE
 ARG PATCH_SHA256
 ARG CONNECT_RETURN_PATCH_SHA256
 ARG DISCONNECT_PURGE_PATCH_SHA256
+ARG TIKTOK_CREATOR_INFO_PATCH_SHA256
 ENV NEXT_PUBLIC_VERSION=$NEXT_PUBLIC_VERSION
 LABEL org.opencontainers.image.source="https://github.com/gitroomhq/postiz-app" \
       org.opencontainers.image.revision="$SOURCE_BASE" \
       org.opencontainers.image.version="$NEXT_PUBLIC_VERSION" \
       com.studioanchor.patch="dispatch-fence-v1" \
       com.studioanchor.patch.sha256="$PATCH_SHA256" \
-      com.studioanchor.patches="dispatch-fence-v1,connect-return-v1,disconnect-purge-v1" \
+      com.studioanchor.patches="dispatch-fence-v1,connect-return-v1,disconnect-purge-v1,tiktok-creator-info-v1" \
       com.studioanchor.patch.connect-return.sha256="$CONNECT_RETURN_PATCH_SHA256" \
       com.studioanchor.patch.disconnect-purge.sha256="$DISCONNECT_PURGE_PATCH_SHA256" \
+      com.studioanchor.patch.tiktok-creator-info.sha256="$TIKTOK_CREATOR_INFO_PATCH_SHA256" \
       com.studioanchor.patch.source="https://github.com/Badmrpotatohead/studioanchor-marketing/pull/36"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
