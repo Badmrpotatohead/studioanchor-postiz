@@ -45,6 +45,7 @@
     "lint:provider": "eslint \"apps/backend/**/*.ts\" \"apps/orchestrator/**/*.ts\" \"libraries/nestjs-libraries/src/**/*.ts\" \"libraries/helpers/src/**/*.ts\" \"tests/**/*.{ts,cjs}\" --max-warnings=0",
     "test:provider-security": "node --test tests/provider.security.test.cjs && TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register tests/provider.upload.test.cjs && pnpm run test:provider-mcp-security",
     "audit:security": "node tests/provider.security.audit.cjs",
+    "test:connect-return": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register --test tests/connect-return.test.cjs",
     "test:provider-mcp-security": "TS_NODE_PROJECT=apps/backend/tsconfig.json TS_NODE_TRANSPILE_ONLY=1 node --no-experimental-strip-types -r ts-node/register -r tsconfig-paths/register tests/provider.mcp-security.test.cjs"
   },
   "dependencies": {

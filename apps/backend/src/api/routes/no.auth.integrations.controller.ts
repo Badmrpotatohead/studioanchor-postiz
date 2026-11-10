@@ -24,6 +24,10 @@ import {
 import { RefreshIntegrationService } from '@gitroom/nestjs-libraries/integrations/refresh.integration.service';
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
 import { getSsrfSafeDispatcher } from '@gitroom/nestjs-libraries/dtos/webhooks/ssrf.safe.dispatcher';
+import {
+  connectReturnTargets,
+  takeConnectReturn,
+} from '@gitroom/nestjs-libraries/integrations/connect.return';
 
 @ApiTags('Integrations')
 @Controller('/integrations')
@@ -46,6 +50,34 @@ export class NoAuthIntegrationsController {
   async connectSocialMedia(
     @Param('integration') integration: string,
     @Body() body: ConnectIntegrationDto
+  ) {
+    // connect-return-v1: a connect started through the public API with an
+    // allowlisted return target gets both outcome URLs, success or failure.
+    const connectReturn = await takeConnectReturn(
+      ioRedis,
+      body?.state,
+      integration
+    );
+    if (!connectReturn) {
+      return this.connectSocialMediaChannel(integration, body);
+    }
+    const targets = connectReturnTargets(connectReturn);
+    try {
+      return {
+        ...(await this.connectSocialMediaChannel(integration, body)),
+        connectReturn: targets,
+      };
+    } catch (err) {
+      throw new HttpException(
+        { msg: 'The account could not be connected', connectReturn: targets },
+        400
+      );
+    }
+  }
+
+  private async connectSocialMediaChannel(
+    integration: string,
+    body: ConnectIntegrationDto
   ) {
     if (
       !this._integrationManager

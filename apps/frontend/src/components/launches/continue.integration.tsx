@@ -11,12 +11,19 @@ import { continueProviderList } from '@gitroom/frontend/components/new-launch/pr
 import { IntegrationContext } from '@gitroom/frontend/components/launches/helpers/use.integration';
 import { newDayjs } from '@gitroom/frontend/components/layout/set.timezone';
 import { useVariables } from '@gitroom/react/helpers/variable.context';
+import {
+  ConnectReturnComplete,
+  ConnectReturnShell,
+  ConnectReturnTargets,
+  isConnectReturnTargets,
+} from '@gitroom/frontend/components/launches/connect.return.shell';
 
 interface TwoStepState {
   integrationId: string;
   onboarding: boolean;
   pages: any[];
   returnURL?: string;
+  connectReturn?: ConnectReturnTargets;
 }
 
 interface SuccessState {
@@ -27,8 +34,9 @@ export const ContinueIntegration: FC<{
   provider: string;
   searchParams: any;
   logged: boolean;
+  studioAnchor?: boolean;
 }> = (props) => {
-  const { provider, searchParams, logged } = props;
+  const { provider, searchParams, logged, studioAnchor } = props;
   const { push } = useRouter();
   const t = useT();
   const fetch = useFetch();
@@ -38,6 +46,10 @@ export const ContinueIntegration: FC<{
   const [twoStepState, setTwoStepState] = useState<TwoStepState | null>(null);
   const [successState, setSuccessState] = useState<SuccessState | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [completion, setCompletion] = useState<{
+    ok: boolean;
+    url: string;
+  } | null>(null);
 
   // Helper to handle navigation - redirects if logged or returnURL exists, otherwise shows inline
   const navigateOrShow = useCallback(
@@ -126,6 +138,34 @@ export const ContinueIntegration: FC<{
             body: JSON.stringify({ ...modifiedParams, timezone }),
           });
         }
+      }
+
+      // connect-return-v1: the backend returns both outcome URLs when the
+      // connect was started with an allowlisted return target.
+      const connectReturn = (await data
+        .clone()
+        .json()
+        .catch(() => ({})))?.connectReturn;
+      if (isConnectReturnTargets(connectReturn)) {
+        if (
+          data.status !== HttpStatusCode.Ok &&
+          data.status !== HttpStatusCode.Created
+        ) {
+          setCompletion({ ok: false, url: connectReturn.failed });
+          return;
+        }
+        const connected = await data.json();
+        if (connected.inBetweenSteps && !searchParams.refresh) {
+          setTwoStepState({
+            integrationId: connected.id,
+            onboarding: false,
+            pages: connected.pages || [],
+            connectReturn,
+          });
+          return;
+        }
+        setCompletion({ ok: true, url: connectReturn.connected });
+        return;
       }
 
       if (data.status === HttpStatusCode.PreconditionFailed) {
@@ -228,6 +268,19 @@ export const ContinueIntegration: FC<{
           body: JSON.stringify({ ...modifiedParams, ...data }),
         });
 
+        if (twoStepState.connectReturn) {
+          const ok =
+            response.status === HttpStatusCode.Ok ||
+            response.status === HttpStatusCode.Created;
+          setCompletion({
+            ok,
+            url: ok
+              ? twoStepState.connectReturn.connected
+              : twoStepState.connectReturn.failed,
+          });
+          return;
+        }
+
         if (
           response.status !== HttpStatusCode.Ok &&
           response.status !== HttpStatusCode.Created
@@ -273,6 +326,78 @@ export const ContinueIntegration: FC<{
     };
     return names[provider] || provider;
   }, [provider]);
+
+  if (completion) {
+    return <ConnectReturnComplete ok={completion.ok} url={completion.url} />;
+  }
+
+  if (studioAnchor && twoStepState && Provider) {
+    return (
+      <ConnectReturnShell title="Choose the account to connect" wide={true}>
+        <p>
+          Select the {providerDisplayName} page or account you want to use with
+          StudioAnchor.
+        </p>
+        <div
+          style={{
+            marginTop: 20,
+            background: '#16264f',
+            color: '#ffffff',
+            borderRadius: 12,
+            padding: 20,
+          }}
+        >
+          <IntegrationContext.Provider
+            value={{
+              date: newDayjs(),
+              value: [],
+              allIntegrations: [],
+              integration: {
+                editor: 'normal',
+                additionalSettings: '',
+                display: '',
+                time: [{ time: 0 }],
+                id: twoStepState.integrationId,
+                type: '',
+                name: '',
+                picture: '',
+                inBetweenSteps: true,
+                changeNickName: false,
+                changeProfilePicture: false,
+                identifier: provider,
+              },
+            }}
+          >
+            <Provider
+              onSave={onSave}
+              existingId={[]}
+              initialData={twoStepState.pages}
+              isSaving={isSaving}
+            />
+          </IntegrationContext.Provider>
+        </div>
+      </ConnectReturnShell>
+    );
+  }
+
+  if (studioAnchor && !twoStepState) {
+    return error ? (
+      <ConnectReturnShell title="The account was not connected" tone="error">
+        <p>
+          {errorMessage ||
+            'Something went wrong. Return to StudioAnchor Marketing and try again.'}
+        </p>
+      </ConnectReturnShell>
+    ) : successState ? (
+      <ConnectReturnShell title="Account connected" tone="success">
+        <p>You can close this window and return to StudioAnchor.</p>
+      </ConnectReturnShell>
+    ) : (
+      <ConnectReturnShell title="Connecting your account">
+        <p>Please wait while we finish connecting your account.</p>
+      </ConnectReturnShell>
+    );
+  }
 
   // Success state for non-logged users without returnURL
   if (successState) {

@@ -54,6 +54,12 @@ import { AdminStatsService } from '@gitroom/nestjs-libraries/database/prisma/adm
 import { OrganizationService } from '@gitroom/nestjs-libraries/database/prisma/organizations/organization.service';
 import { GetOrgActivityDto } from '@gitroom/nestjs-libraries/dtos/analytics/get.org.activity.dto';
 import dayjs from 'dayjs';
+import {
+  CONNECT_RETURN_PROTOCOL,
+  connectReturnOrigins,
+  saveConnectReturn,
+  validateConnectReturn,
+} from '@gitroom/nestjs-libraries/integrations/connect.return';
 
 @ApiTags('Public API')
 @Controller('/public/v1')
@@ -268,12 +274,23 @@ export class PublicIntegrationsController {
       }));
   }
 
+  // StudioAnchor channel-control capabilities, so a client can tell which
+  // patched behaviours this server provides before relying on them.
+  @Get('/channel-controls')
+  getChannelControls() {
+    Sentry.metrics.count('public_api-request', 1);
+    return {
+      protocols: connectReturnOrigins().length ? [CONNECT_RETURN_PROTOCOL] : [],
+    };
+  }
+
   @Get('/social/:integration')
   @CheckPolicies([AuthorizationActions.Create, Sections.CHANNEL])
   async getIntegrationUrl(
     @Param('integration') integration: string,
     @Query('refresh') refresh: string,
-    @GetOrgFromRequest() org: Organization
+    @GetOrgFromRequest() org: Organization,
+    @Query('returnTo') returnTo?: string
   ) {
     Sentry.metrics.count('public_api-request', 1);
     if (
@@ -282,6 +299,17 @@ export class PublicIntegrationsController {
         .includes(integration)
     ) {
       throw new HttpException({ msg: 'Integration not allowed' }, 400);
+    }
+
+    // connect-return-v1: only when return origins are configured; otherwise
+    // the query parameter is ignored, as upstream does.
+    const returnOrigins = connectReturnOrigins();
+    const returnTarget =
+      returnTo && returnOrigins.length
+        ? validateConnectReturn(returnTo, returnOrigins)
+        : null;
+    if (returnTo && returnOrigins.length && !returnTarget) {
+      throw new HttpException({ msg: 'Return target not allowed' }, 400);
     }
 
     // A provider migrated via MIGRATE_PROVIDERS reconnects through its target
@@ -314,6 +342,14 @@ export class PublicIntegrationsController {
 
       await ioRedis.set(`organization:${state}`, org.id, 'EX', 3600);
       await ioRedis.set(`login:${state}`, codeVerifier, 'EX', 3600);
+
+      if (returnTarget) {
+        await saveConnectReturn(ioRedis, state, {
+          target: returnTarget,
+          provider: migrateTo || integration,
+        });
+        return { url, returnIntent: CONNECT_RETURN_PROTOCOL };
+      }
 
       return { url };
     } catch (err) {

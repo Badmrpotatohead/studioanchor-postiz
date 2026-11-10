@@ -19,5 +19,7 @@ export default async function Page(
   } = params;
 
   const get = (await cookies()).get('auth');
-  return <ContinueIntegration searchParams={searchParams} provider={provider} logged={!!get?.name} />;
+  // connect-return-v1: StudioAnchor-branded connect screens when configured.
+  const studioAnchor = !!process.env.POSTIZ_CONNECT_RETURN_ORIGINS;
+  return <ContinueIntegration searchParams={searchParams} provider={provider} logged={!!get?.name} studioAnchor={studioAnchor} />;
 }
