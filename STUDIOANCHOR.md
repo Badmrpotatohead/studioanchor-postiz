@@ -9,9 +9,9 @@ StudioAnchor is not affiliated with, endorsed by, or operated by Postiz or Gitro
 | | |
 | --- | --- |
 | Upstream base | [`8b84b0dc2767b757c2355158573635600ae027c7`](https://github.com/gitroomhq/postiz-app/commit/8b84b0dc2767b757c2355158573635600ae027c7) (tag `v2.24.0`) |
-| Modification | Five commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`), `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`), `tiktok-creator-info-v1.patch` (sha256 `b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce`) and `least-scopes-v1.patch` (sha256 `4a80205e7804473ed1df5e208531ca58e6997fe53cef1e3277cb6722e45b6209`) |
+| Modification | Six commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`), `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`), `tiktok-creator-info-v1.patch` (sha256 `b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce`) `least-scopes-v1.patch` (sha256 `4a80205e7804473ed1df5e208531ca58e6997fe53cef1e3277cb6722e45b6209`) and `tiktok-creator-refresh-v1.patch` (sha256 `426cf10a698a25904475796bc604bf91cfe7e176367d8eb978549d01c71dc099`) |
 | Date modified | 2026-10-24 (dispatch fence); 2026-11-09 (connect return, disconnect purge) |
-| Build | Image `studioanchor/postiz:v2.24.0-sa-scopes1`, built with [`Dockerfile.studioanchor`](Dockerfile.studioanchor). The previous image is `v2.24.0-sa-tiktok1`. |
+| Build | Image `studioanchor/postiz:v2.24.0-sa-tiktok2`, built with [`Dockerfile.studioanchor`](Dockerfile.studioanchor). The previous image is `v2.24.0-sa-scopes1`. |
 
 The changes:
 
@@ -120,7 +120,7 @@ From the repository root:
 
 ```bash
 docker build -f Dockerfile.studioanchor \
-  --build-arg NEXT_PUBLIC_VERSION=v2.24.0-sa-scopes1 \
+  --build-arg NEXT_PUBLIC_VERSION=v2.24.0-sa-tiktok2 \
   --build-arg SOURCE_BASE=8b84b0dc2767b757c2355158573635600ae027c7 \
   --build-arg PATCH_SHA256=dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd \
   --build-arg CONNECT_RETURN_PATCH_SHA256=dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b \
