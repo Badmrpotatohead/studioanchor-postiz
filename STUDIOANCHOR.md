@@ -9,7 +9,7 @@ StudioAnchor is not affiliated with, endorsed by, or operated by Postiz or Gitro
 | | |
 | --- | --- |
 | Upstream base | [`8b84b0dc2767b757c2355158573635600ae027c7`](https://github.com/gitroomhq/postiz-app/commit/8b84b0dc2767b757c2355158573635600ae027c7) (tag `v2.24.0`) |
-| Modification | Six commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`), `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`), `tiktok-creator-info-v1.patch` (sha256 `b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce`) `least-scopes-v1.patch` (sha256 `4a80205e7804473ed1df5e208531ca58e6997fe53cef1e3277cb6722e45b6209`) and `tiktok-creator-refresh-v1.patch` (sha256 `426cf10a698a25904475796bc604bf91cfe7e176367d8eb978549d01c71dc099`) |
+| Modification | Six commits on that base, applied in order: `dispatch-fence-v1.patch` (sha256 `dcbfff3903ddd32d9c2cdd3f77a7ffe8a1b9d17785de1e54411e748d04dfe7cd`), `connect-return-v1.patch` (sha256 `dd65f0716e3d242d7bb9e99e326f7c03fec70841fea402a676c36331fcf9f89b`), `disconnect-purge-v1.patch` (sha256 `fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e`), `tiktok-creator-info-v1.patch` (sha256 `b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce`), `least-scopes-v1.patch` (sha256 `4a80205e7804473ed1df5e208531ca58e6997fe53cef1e3277cb6722e45b6209`) and `tiktok-creator-refresh-v1.patch` (sha256 `426cf10a698a25904475796bc604bf91cfe7e176367d8eb978549d01c71dc099`) |
 | Date modified | 2026-10-24 (dispatch fence); 2026-11-09 (connect return, disconnect purge) |
 | Build | Image `studioanchor/postiz:v2.24.0-sa-tiktok2`, built with [`Dockerfile.studioanchor`](Dockerfile.studioanchor). The previous image is `v2.24.0-sa-scopes1`. |
 
@@ -24,6 +24,7 @@ The changes:
 - **Disconnect purge (`disconnect-purge-v1`).** Deleting a channel, through the public API, the app or the enterprise route, clears its token, refresh token, token expiry, custom instance details, name, picture, profile and additional settings in the same update that sets `deletedAt`. `internalId`, `rootInternalId`, `providerIdentifier` and `organizationId` are kept for the uniqueness and reconnect logic, and a reconnect restores the name. The grant is then revoked at the provider, best-effort, for Google (YouTube and Business Profile), LinkedIn and LinkedIn Pages, TikTok, Reddit, Discord, Twitch and Slack, unless another live channel shares it. Other providers have no revocation API this build can call. A token refresh that finishes after a deletion no longer writes tokens back. `scripts/studioanchor/purge-deleted-integrations.ts` purges channels deleted before this change. It does a dry run by default and only executes with a backup file written in the last 24 hours plus the approved plan digest. Posts and the dispatch-fence columns are never changed.
 - **TikTok creator info (`tiktok-creator-info-v1`).** An organization-authenticated `GET /public/v1/integrations/:id/tiktok-creator-info` route queries TikTok immediately through the selected connected account. It returns only nickname, avatar URL, current privacy choices, disabled interaction flags and the current maximum video duration. The route rejects non-TikTok, deleted, disabled and cross-organization integrations, and `GET /public/v1/channel-controls` advertises the protocol so clients can hide Direct Post when the patch is absent.
 - **Least-privilege provider scopes (`least-scopes-v1`).** OAuth requests now contain only the publishing, account-identity and StudioAnchor-used Meta analytics permissions. LinkedIn identity uses OIDC userinfo, TikTok identity requests only basic fields, YouTube channel reads request only snippets, and removed-scope comment, reply, Threads-insight and TikTok inbox-upload paths no longer call unauthorized endpoints. Existing broader grants remain valid; no channel must reconnect for the image upgrade.
+- **TikTok creator info renews expired tokens (`tiktok-creator-refresh-v1`).** TikTok access tokens last 24 hours. The creator-info route now renews an expired token through the same refresh service the posting path uses before calling TikTok. It answers 409 when the channel must be reconnected and 502 when TikTok refuses, instead of an internal error.
 
 Files added or modified (all others are unchanged from upstream):
 
@@ -112,6 +113,13 @@ Added or modified by `least-scopes-v1`:
 - `package.json` (modified)
 - `tests/least-scopes.test.cjs` (added)
 
+Added or modified by `tiktok-creator-refresh-v1`:
+
+- `apps/backend/src/public-api/routes/v1/public.integrations.controller.ts` (modified)
+- `package.json` (modified)
+- `tests/tiktok-creator-info.test.cjs` (modified)
+- `tests/tiktok-creator-refresh.test.cjs` (added)
+
 This file (`STUDIOANCHOR.md`) and `Dockerfile.studioanchor` are also added.
 
 ## Building
@@ -127,7 +135,8 @@ docker build -f Dockerfile.studioanchor \
   --build-arg DISCONNECT_PURGE_PATCH_SHA256=fa727b7d5a4449fc3d4c374dcae4ab69b3d24a973981c61623097c2428382b5e \
   --build-arg TIKTOK_CREATOR_INFO_PATCH_SHA256=b3c48074ea79054602afcfa58277b8cdeb61a50d3c244188ddc343626a606fce \
   --build-arg LEAST_SCOPES_PATCH_SHA256=4a80205e7804473ed1df5e208531ca58e6997fe53cef1e3277cb6722e45b6209 \
-  -t studioanchor/postiz:v2.24.0-sa-scopes1 .
+  --build-arg TIKTOK_CREATOR_REFRESH_PATCH_SHA256=426cf10a698a25904475796bc604bf91cfe7e176367d8eb978549d01c71dc099 \
+  -t studioanchor/postiz:v2.24.0-sa-tiktok2 .
 ```
 
 The image uses Node 22.22.0, PNPM 10.6.1 and `pnpm install --frozen-lockfile`. Runtime configuration and secrets are supplied by the deployment environment and are not part of the image.

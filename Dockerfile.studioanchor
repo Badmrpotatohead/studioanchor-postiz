@@ -21,7 +21,8 @@ LABEL org.opencontainers.image.source="https://github.com/gitroomhq/postiz-app" 
       com.studioanchor.patch.connect-return.sha256="$CONNECT_RETURN_PATCH_SHA256" \
       com.studioanchor.patch.disconnect-purge.sha256="$DISCONNECT_PURGE_PATCH_SHA256" \
       com.studioanchor.patch.tiktok-creator-info.sha256="$TIKTOK_CREATOR_INFO_PATCH_SHA256" \
-      com.studioanchor.patch.least-scopes.sha256="$LEAST_SCOPES_PATCH_SHA256" \n      com.studioanchor.patch.tiktok-creator-refresh.sha256="$TIKTOK_CREATOR_REFRESH_PATCH_SHA256" \
+      com.studioanchor.patch.least-scopes.sha256="$LEAST_SCOPES_PATCH_SHA256" \
+      com.studioanchor.patch.tiktok-creator-refresh.sha256="$TIKTOK_CREATOR_REFRESH_PATCH_SHA256" \
       com.studioanchor.patch.source="https://github.com/Badmrpotatohead/studioanchor-marketing/pull/36"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     g++ \
