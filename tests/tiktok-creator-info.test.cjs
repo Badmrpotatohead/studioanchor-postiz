@@ -50,7 +50,7 @@ test('public route is organization-scoped and advertises the protocol', () => {
   assert.match(source, /@Get\('\/integrations\/:id\/tiktok-creator-info'\)/);
   assert.match(source, /getIntegrationById\(\s*org\.id,\s*id\s*\)/);
   assert.match(source, /integration\.providerIdentifier !== 'tiktok'/);
-  assert.match(source, /return provider\.creatorInfo\(integration\.token\)/);
+  assert.match(source, /return await provider\.creatorInfo\(accessToken\)/);
   assert.match(source, /TIKTOK_CREATOR_INFO_PROTOCOL/);
   assert.equal(TIKTOK_CREATOR_INFO_PROTOCOL, 'tiktok-creator-info-v1');
 });

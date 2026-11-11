@@ -313,7 +313,29 @@ export class PublicIntegrationsController {
     if (!provider.creatorInfo) {
       throw new HttpException({ msg: 'TikTok creator information unavailable' }, 503);
     }
-    return provider.creatorInfo(integration.token);
+    // tiktok-creator-refresh-v1: TikTok access tokens last 24 hours, so renew
+    // an expired token the same way the posting path does before asking.
+    if (integration.refreshNeeded || integration.inBetweenSteps) {
+      throw new HttpException({ msg: 'TikTok account must be reconnected' }, 409);
+    }
+    let accessToken = integration.token;
+    if (
+      !integration.tokenExpiration ||
+      dayjs(integration.tokenExpiration).isBefore(dayjs().add(1, 'minute'))
+    ) {
+      const refreshed = await this._refreshIntegrationService
+        .refresh(integration)
+        .catch(() => false as const);
+      if (!refreshed || !refreshed.accessToken) {
+        throw new HttpException({ msg: 'TikTok account must be reconnected' }, 409);
+      }
+      accessToken = refreshed.accessToken;
+    }
+    try {
+      return await provider.creatorInfo(accessToken);
+    } catch {
+      throw new HttpException({ msg: 'TikTok creator information unavailable' }, 502);
+    }
   }
 
   @Get('/social/:integration')
